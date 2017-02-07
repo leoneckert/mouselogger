@@ -14,17 +14,24 @@ void current_utc_time(struct timespec *ts) {
     clock_gettime(CLOCK_REALTIME, ts);
 #endif
 }
+size_t dheight = NULL;
+size_t dwidth = NULL;
+size_t cwidth = NULL;
+size_t cheight = NULL;
+int rows = 5;
+int cols = 7;
 void displayChanged(CGDirectDisplayID display, CGDisplayChangeSummaryFlags flags, void *userInfo){
 
     
-    /* CGDirectDisplayID disID = CGMainDisplayID(); */
-    /* size_t dheight = CGDisplayPixelsHigh(display); */
-    /* size_t dwidth = CGDisplayPixelsWide(display); */
-    /* fprintf(logfile,"x: %zu y: %zu\n", dheight, dwidth); */
-    /* fprintf(logfile, "hello"); */
-    /* fflush(logfile); */
-    printf("hello");
-    fflush(stdout);
+    CGDirectDisplayID disID = CGMainDisplayID();
+
+    dheight = CGDisplayPixelsHigh(disID);
+    dwidth = CGDisplayPixelsWide(disID);
+    fprintf(logfile,"//display configs. w: %zu h: %zu\n", dwidth, dheight);
+    cwidth = (dwidth/cols);
+    cheight = (dheight/rows);
+    fprintf(logfile, "//cell sizes. w: %zu h: %zu\n", cwidth, cheight);
+    fflush(logfile);
 }
 // similar approach but C# here: http://stackoverflow.com/questions/6183594/handling-mouse-events-on-transparent-window-conditionally
 // http://brianlipkowitz.tumblr.com/post/4881199383/quartz-event-taps
@@ -57,25 +64,37 @@ int main(int argc, const char *argv[]) {
         exit(1);
     }
 
+
+
     // Output to logfile.
-    fprintf(logfile, "\n\nKeylogging has begun.\n%s\n", asctime(localtime(&result)));
+    fprintf(logfile, "\n\n//Mouselogging has begun.\n//%s\n", asctime(localtime(&result)));
     fflush(logfile);
 
+    CGDirectDisplayID disID = CGMainDisplayID();
+
+    dheight = CGDisplayPixelsHigh(disID);
+    dwidth = CGDisplayPixelsWide(disID);
+    fprintf(logfile,"//display configs. w: %zu h: %zu\n", dwidth, dheight);
+    cwidth = (dwidth/cols);
+    cheight = (dheight/rows);
+    fprintf(logfile, "//cell sizes. w: %zu h: %zu\n", cwidth, cheight);
+    fflush(logfile);
+    
     // Display the location of the logfile and start the loop.
     printf("Logging to: %s\n", logfileLocation);
     fflush(stdout);
 
     // https://developer.apple.com/reference/coregraphics/quartz_display_services?language=objc
-    CGDirectDisplayID disID = CGMainDisplayID();
-    printf("Logging to: %i\n", disID);
-    fflush(stdout);
+    /* CGDirectDisplayID disID = CGMainDisplayID(); */
+    /* printf("Logging to: %i\n", disID); */
+    /* fflush(stdout); */
     /* CGSize disSize = CGDisplayScreenSize(disID); */
-    size_t dheight = CGDisplayPixelsHigh(disID);
-    printf("Display Height: %zu\n", dheight);
-    fflush(stdout);
-    size_t dwidth = CGDisplayPixelsWide(disID);
-    printf("Display Width: %zu\n", dwidth);
-    fflush(stdout);
+    /* size_t dheight = CGDisplayPixelsHigh(disID); */
+    /* printf("Display Height: %zu\n", dheight); */
+    /* fflush(stdout); */
+    /* size_t dwidth = CGDisplayPixelsWide(disID); */
+    /* printf("Display Width: %zu\n", dwidth); */
+    /* fflush(stdout); */
 
     CGDisplayRegisterReconfigurationCallback(displayChanged, NULL);
     /* CFRunLoopRun(); */
@@ -90,6 +109,35 @@ https://developer.apple.com/reference/coregraphics/quartz_event_services
 https://developer.apple.com/reference/coregraphics/cgevent
 integer value fields of CGEvent: https://developer.apple.com/reference/coregraphics/cgeventfield 
 */
+int getCurrentCOL(int x){
+    int currentCOL = 0;
+    int i;
+    for(i = 0; i < cols; i = i + 1){
+        /* fprintf(logfile, "i: %i, i*cwidth: %i\n", i, (i*cwidth)); */
+        /* fflush(logfile); */
+        if(x > (i*cwidth)){
+            currentCOL = i;
+        }
+    } 
+    return currentCOL;
+
+}
+
+int getCurrentROW(int y){
+    int currentROW = 0;
+    int i;
+    for(i = 0; i < rows; i = i + 1){
+        /* fprintf(logfile, "i: %i, i*cwidth: %i\n", i, (i*cwidth)); */
+        /* fflush(logfile); */
+        if(x > (i*cheight)){
+            currentROW = i;
+        }
+    } 
+    return currentROW;
+
+}
+
+
 
 // The following callback method is invoked on every keypress.
 CGEventRef CGEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
@@ -97,6 +145,11 @@ CGEventRef CGEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef e
     CGPoint po = CGEventGetLocation(event);
     int posX = (int)po.x;
     int posY = (int)po.y;
+    int currentCOL = getCurrentX(posX);
+    /* const char* currentCell = getCurrentCell(posX, posY); */
+
+    fprintf(logfile, "currentCOL | currentROW: %i | %i\n", currentCOL, currentROW);
+    fflush(logfile);
     /* fprintf(logfile, "x %d\n", po.x); */
     /* fprintf(logfile, "y %d\n", po.y); */
     
@@ -105,29 +158,6 @@ CGEventRef CGEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef e
     /* fprintf(logfile,location); */
     
     /* fflush(logfile); */
-
-    /* Retrieve the incoming keycode. */
-    /* CGKeyCode keyCode = (CGKeyCode) CGEventGetIntegerValueField(event, kCGMouseCursorPosition); */
-    /* fprintf(logfile, "bla, %i\n", keyCode); */
-    /*  */
-    /* Get current timestamp: */
-    /* struct timespec ts; */
-    /* current_utc_time(&ts); */
-    /*  */
-    /* if (type == kCGEventKeyUp) { */
-    /*     fprintf(logfile, "%lu,%lu,%i,keyUP\n", ts.tv_sec, ts.tv_nsec, keyCode); */
-    /*     fflush(logfile); */
-    /* } */
-    /*  */
-    /* if (type == kCGEventKeyDown) { */
-    /*     fprintf(logfile, "%lu,%lu,%i,keyDOWN\n", ts.tv_sec, ts.tv_nsec, keyCode); */
-    /*     fflush(logfile); */
-    /* } */
-    /*  */
-    /* if (type == kCGEventFlagsChanged) { */
-    /*     fprintf(logfile, "%lu,%lu,%i,flagCHANGE\n", ts.tv_sec, ts.tv_nsec, keyCode); */
-    /*     fflush(logfile); */
-    /* } */
 
     return event;
 }
